@@ -1,6 +1,6 @@
 import torch
 import torch.nn as nn
-class NN_convolutional1( nn.Module ):
+class model( nn.Module ):
     
     def __init__(self): 
         super(NN_convolutional1, self).__init__()
