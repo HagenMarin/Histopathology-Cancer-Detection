@@ -3,14 +3,22 @@ import glob
 import torch
 import os
 import cv2
+import pandas as pd
+
+def loadDataframe():
+    cwd = Path.cwd()
+    filename = os.path.join(cwd, 'train_labels.csv')
+    df = pd.read_csv(filename)
+    df = df.sort_values('id')
+    return df
 
 
-def dataIterator(df, batch_size, dirlist):
+def dataIterator(df, batch_size):
     #print(df['23e49215068a2bc642fae1cc75cac1e2ea926314'])
     cwd = Path.cwd()
     df = df.to_numpy()
     count = 0
-    
+    dirlist = sorted(glob.glob('train/*.tif'))
     
     for i in range(0,df.shape[0]-batch_size,batch_size):
         batch_imgs = torch.empty((batch_size,3,96,96),dtype=torch.float32)

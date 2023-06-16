@@ -1,9 +1,9 @@
 import torch
 import torch.nn as nn
-class model( nn.Module ):
+class model_class( nn.Module ):
     
     def __init__(self): 
-        super(NN_convolutional1, self).__init__()
+        super(model_class, self).__init__()
         self.layers = nn.Sequential( 
             nn.Conv2d(3,64,3,padding=1),
             nn.ReLU(), 

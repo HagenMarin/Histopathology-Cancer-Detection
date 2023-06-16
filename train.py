@@ -7,22 +7,18 @@ import torchvision.datasets as datasets
 import torch.optim as optim
 import matplotlib.pyplot as plt
 import pickle
+from data_loading import dataIterator
+from data_loading import loadDataframe
+import pandas as pd
 
 
-use_cuda = torch.cuda.is_available()
-device = torch.device("cuda" if use_cuda else "cpu")
-
-print("Training on device:"+device)
-
-
-
-def accuracy_and_loss( net, loss_function,df,batch_size ):
+def accuracy_and_loss( net, loss_function,df,batch_size,device ):
     total_correct = 0 
     total_loss = 0.0 
     total_examples = 0 
     n_batches = 0 
     with torch.no_grad():  # we do not neet to compute the gradients when making predictions on the validation set
-        for data in dataIteratorPreload(df,batch_size): 
+        for data in dataIterator(df,batch_size): 
             images, labels = data
             images, labels = images.to(device), labels.to(device)
             outputs = net(images)
@@ -39,85 +35,89 @@ def accuracy_and_loss( net, loss_function,df,batch_size ):
     return ( accuracy, mean_loss )
 
 
+def main():
+    use_cuda = torch.cuda.is_available()
+    device = torch.device("cuda" if use_cuda else "cpu")
+    print("Training on device:"+str(device))
 
+    dataframe = loadDataframe()
+    loss_function = nn.BCELoss() 
+    n_epochs = 10
+    #TODO add dataframe
+    batch_size=128
+    weight_decay=0.0
+        
+    #trainloader = torch.utils.data.DataLoader( training_set, batch_size=batch_size, shuffle=True)
+    #testloader = torch.utils.data.DataLoader( test_set, batch_size=batch_size, shuffle=True)
 
-loss_function = nn.BCELoss() 
-n_epochs = 10
-#TODO add dataframe
-batch_size=32,
-weight_decay=0.0
-    
-#trainloader = torch.utils.data.DataLoader( training_set, batch_size=batch_size, shuffle=True)
-#testloader = torch.utils.data.DataLoader( test_set, batch_size=batch_size, shuffle=True)
+        
 
-    
+    thenet = model_class()
+    thenet.to(device)
+    optimizer1 = optim.Adam( thenet.parameters(), weight_decay=weight_decay )
 
-thenet = model_class()
-thenet.to(device)
-optimizer1 = optim.Adam( thenet.parameters(), weight_decay=weight_decay )
+    train_acc = []
+    val_acc = []
+    train_loss = []
+    val_loss = []
 
-train_acc = []
-val_acc = []
-train_loss = []
-val_loss = []
+    for epoch in range(n_epochs): # number of times to loop over the dataset
+        
+        total_loss = 0 
+        total_correct = 0 
+        total_examples = 0 
+        n_mini_batches = 0
+        trainloader = dataIterator(dataframe,batch_size)
+        for i, mini_batch in enumerate( trainloader, 0):
+            images, labels = mini_batch
+            print(i)
+            images, labels = images.to(device), labels.to(device)
+            # zero the parameter gradients
+            # all the parameters that are being updated are in the optimizer, 
+            # so if we zero the gradients of all the tensors in the optimizer, 
+            # that is the safest way to zero all the gradients
+            optimizer1.zero_grad()
+            #print(images)
+            outputs = thenet(images) # this is the forward pass
 
-for epoch in range(n_epochs): # number of times to loop over the dataset
-    
-    total_loss = 0 
-    total_correct = 0 
-    total_examples = 0 
-    n_mini_batches = 0
-    dirlist = sorted(glob.glob('train/*.tif'))
-    trainloader = dataIterator(dataframe,batch_size,dirlist)
-    for i, mini_batch in enumerate( trainloader, 0 ):
-        images, labels = mini_batch
-        print(i)
-        images, labels = images.to(device), labels.to(device)
-        # zero the parameter gradients
-        # all the parameters that are being updated are in the optimizer, 
-        # so if we zero the gradients of all the tensors in the optimizer, 
-        # that is the safest way to zero all the gradients
-        optimizer1.zero_grad()
-        #print(images)
-        outputs = thenet(images) # this is the forward pass
+            loss = loss_function ( outputs, labels )
 
-        loss = loss_function ( outputs, labels )
+            loss.backward() # does the backward pass and computes all gradients
 
-        loss.backward() # does the backward pass and computes all gradients
+            optimizer1.step() # does one optimisation step
 
-        optimizer1.step() # does one optimisation step
+            n_mini_batches += 1 # keep track of number of minibatches, and collect the loss for each minibatch
+            total_loss += loss.item() # remember that the loss is a zero-order tensor
+            # so that to extract its value, we use .item(), as we cannot index as there are no dimensions
 
-        n_mini_batches += 1 # keep track of number of minibatches, and collect the loss for each minibatch
-        total_loss += loss.item() # remember that the loss is a zero-order tensor
-        # so that to extract its value, we use .item(), as we cannot index as there are no dimensions
+            # keep track of number of examples, and collect number correct in each minibatch
+            total_correct += sum( ( outputs > 0.5 ) == ( labels > 0.5 ) ).item()
+            total_examples += len( labels )
 
-        # keep track of number of examples, and collect number correct in each minibatch
-        total_correct += sum( ( outputs > 0.5 ) == ( labels > 0.5 ) ).item()
-        total_examples += len( labels )
+        # calculate statistics for each epoch and print them. 
+        # You can alter this code to accumulate these statistics into lists/vectors and plot them
+        epoch_training_accuracy = total_correct / total_examples
+        epoch_training_loss = total_loss / n_mini_batches
 
-    # calculate statistics for each epoch and print them. 
-    # You can alter this code to accumulate these statistics into lists/vectors and plot them
-    epoch_training_accuracy = total_correct / total_examples
-    epoch_training_loss = total_loss / n_mini_batches
+        epoch_val_accuracy, epoch_val_loss = accuracy_and_loss( thenet, loss_function, dataframe,batch_size,device)
 
-    epoch_val_accuracy, epoch_val_loss = accuracy_and_loss( thenet, loss_function, dataframe,batch_size )
+        print('Epoch %d loss: %.3f acc: %.3f val_loss: %.3f val_acc: %.3f'
+                %(epoch+1, epoch_training_loss, epoch_training_accuracy, epoch_val_loss, epoch_val_accuracy   ))
+        
+        train_loss.append( epoch_training_loss )
+        train_acc.append( epoch_training_accuracy )
+        val_loss.append( epoch_val_loss )
+        val_acc.append( epoch_val_accuracy )
 
-    print('Epoch %d loss: %.3f acc: %.3f val_loss: %.3f val_acc: %.3f'
-            %(epoch+1, epoch_training_loss, epoch_training_accuracy, epoch_val_loss, epoch_val_accuracy   ))
-    
-    train_loss.append( epoch_training_loss )
-    train_acc.append( epoch_training_accuracy )
-    val_loss.append( epoch_val_loss )
-    val_acc.append( epoch_val_accuracy )
+    history = { 'train_loss': train_loss, 
+                'train_acc': train_acc, 
+                'val_loss': val_loss,
+                'val_acc': val_acc }
+    torch.save(thenet.state_dict(), "/model/model.pickle")
+    plt.plot( history['train_acc'], label='train_acc')
+    plt.plot( history['val_acc'], label='val_acc')
+    plt.legend()
+    plt.show()
 
-history = { 'train_loss': train_loss, 
-            'train_acc': train_acc, 
-            'val_loss': val_loss,
-            'val_acc': val_acc }
-torch.save(thenet.state_dict(), "/model/model.pickle")
-plt.plot( history['train_acc'], label='train_acc')
-plt.plot( history['val_acc'], label='val_acc')
-plt.legend()
-plt.show()
-
-#return ( history, thenet ) 
+if __name__=='__main__':
+    main()
