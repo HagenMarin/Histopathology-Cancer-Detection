@@ -12,6 +12,8 @@ from data_loading import loadDataframe
 from data_loading import makeTrainDataset
 from data_loading import iterate_batches
 import pandas as pd
+from pathlib import Path
+
 
 
 def accuracy_and_loss( net, loss_function,split,batch_size,device ):
@@ -38,7 +40,6 @@ def accuracy_and_loss( net, loss_function,split,batch_size,device ):
 
 
 def main():
-    
     use_cuda = torch.cuda.is_available()
     device = torch.device("cuda" if use_cuda else "cpu")
     print("Training on device:"+str(device))
@@ -116,7 +117,8 @@ def main():
                 'train_acc': train_acc, 
                 'val_loss': val_loss,
                 'val_acc': val_acc }
-    torch.save(thenet.state_dict(), "/model/model.pickle")
+    cwd = Path.cwd()
+    torch.save(thenet.state_dict(), str(cwd)+"/model/model.pickle")
     plt.plot( history['train_acc'], label='train_acc')
     plt.plot( history['val_acc'], label='val_acc')
     plt.legend()
