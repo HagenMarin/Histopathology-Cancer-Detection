@@ -9,16 +9,18 @@ import matplotlib.pyplot as plt
 import pickle
 from data_loading import dataIterator
 from data_loading import loadDataframe
+from data_loading import makeTrainDataset
+from data_loading import iterate_batches
 import pandas as pd
 
 
-def accuracy_and_loss( net, loss_function,df,batch_size,device ):
+def accuracy_and_loss( net, loss_function,split,batch_size,device ):
     total_correct = 0 
     total_loss = 0.0 
     total_examples = 0 
     n_batches = 0 
     with torch.no_grad():  # we do not neet to compute the gradients when making predictions on the validation set
-        for data in dataIterator(df,batch_size): 
+        for data in iterate_batches(batch_size,split,train=False): 
             images, labels = data
             images, labels = images.to(device), labels.to(device)
             outputs = net(images)
@@ -36,6 +38,7 @@ def accuracy_and_loss( net, loss_function,df,batch_size,device ):
 
 
 def main():
+    
     use_cuda = torch.cuda.is_available()
     device = torch.device("cuda" if use_cuda else "cpu")
     print("Training on device:"+str(device))
@@ -43,12 +46,10 @@ def main():
     dataframe = loadDataframe()
     loss_function = nn.BCELoss() 
     n_epochs = 10
-    #TODO add dataframe
     batch_size=128
     weight_decay=0.0
+    split = int((dataframe.shape[0]/batch_size)*0.7)
         
-    #trainloader = torch.utils.data.DataLoader( training_set, batch_size=batch_size, shuffle=True)
-    #testloader = torch.utils.data.DataLoader( test_set, batch_size=batch_size, shuffle=True)
 
         
 
@@ -67,7 +68,9 @@ def main():
         total_correct = 0 
         total_examples = 0 
         n_mini_batches = 0
-        trainloader = dataIterator(dataframe,batch_size)
+        #trainloader = dataIterator(dataframe,batch_size)
+        
+        trainloader = iterate_batches(batch_size,split)
         for i, mini_batch in enumerate( trainloader, 0):
             images, labels = mini_batch
             print(i)
@@ -99,7 +102,7 @@ def main():
         epoch_training_accuracy = total_correct / total_examples
         epoch_training_loss = total_loss / n_mini_batches
 
-        epoch_val_accuracy, epoch_val_loss = accuracy_and_loss( thenet, loss_function, dataframe,batch_size,device)
+        epoch_val_accuracy, epoch_val_loss = accuracy_and_loss( thenet, loss_function, split,batch_size,device)
 
         print('Epoch %d loss: %.3f acc: %.3f val_loss: %.3f val_acc: %.3f'
                 %(epoch+1, epoch_training_loss, epoch_training_accuracy, epoch_val_loss, epoch_val_accuracy   ))

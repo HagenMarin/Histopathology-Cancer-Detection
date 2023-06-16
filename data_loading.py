@@ -4,6 +4,7 @@ import torch
 import os
 import cv2
 import pandas as pd
+import pickle
 
 def loadDataframe():
     cwd = Path.cwd()
@@ -13,13 +14,36 @@ def loadDataframe():
     return df
 
 
+def create_batches(batch_size):
+    cwd = Path.cwd()
+    
+    dataframe = loadDataframe()
+    trainloader = dataIterator(dataframe,batch_size)
+    for i, minibatch in enumerate(trainloader,0):
+        filename = str(cwd)+ '/Batches'+str(batch_size)+'/batch_'+str(i)+'.pickle'
+        print(filename)
+        with open(filename, 'wb+') as handle:
+            pickle.dump(minibatch, handle, protocol=pickle.HIGHEST_PROTOCOL)
+
+def iterate_batches(batch_size,split, train=True):
+    dirlist = sorted(glob.glob('Batches'+str(batch_size)+'/*.pickle'))
+    if train:
+        dirlist = dirlist[:split]
+    else:
+        dirlist = dirlist[split:]
+    for i, filename in enumerate(dirlist):
+        with open(filename, 'rb') as handle:
+            minibatch = pickle.load(handle)
+        yield minibatch
+
 def dataIterator(df, batch_size):
     #print(df['23e49215068a2bc642fae1cc75cac1e2ea926314'])
     cwd = Path.cwd()
     df = df.to_numpy()
     count = 0
     dirlist = sorted(glob.glob('train/*.tif'))
-    
+    print(df.shape[0])
+    print(batch_size)
     for i in range(0,df.shape[0]-batch_size,batch_size):
         batch_imgs = torch.empty((batch_size,3,96,96),dtype=torch.float32)
         batch_labels = torch.empty((batch_size,1),dtype=torch.float32)
@@ -77,10 +101,13 @@ def dataIteratorPreload(df, batch_size):
                 batch_labels[n]=torch.tensor(float(df[i+n,1]),dtype=torch.float64)
             yield (batch_imgs,batch_labels)
 
-def makeTrainDataset(df, size, dirlist):
+def makeTrainDataset(df, size):
     datasetArr = []
-    for i, instance in enumerate(dataIterator(df,1,dirlist)):
+    for i, instance in enumerate(dataIterator(df,1)):
         datasetArr.append(instance[0])
-        if(not i<size):
+        if(i>size-1):
             break
+        if(i%10000==0):
+            print(i)
+    print('finished Loop')
     return datasetArr
