@@ -74,7 +74,7 @@ def main():
         trainloader = iterate_batches(batch_size,split)
         for i, mini_batch in enumerate( trainloader, 0):
             images, labels = mini_batch
-            print(i)
+            #print(i)
             images, labels = images.to(device), labels.to(device)
             # zero the parameter gradients
             # all the parameters that are being updated are in the optimizer, 
