@@ -25,8 +25,7 @@ def create_batches(batch_size):
         with open(filename, 'wb+') as handle:
             pickle.dump(minibatch, handle, protocol=pickle.HIGHEST_PROTOCOL)
 
-def iterate_batches(batch_size,split, train=True):
-    dirlist = sorted(glob.glob('Batches'+str(batch_size)+'/*.pickle'))
+def iterate_batches(dirlist, split, train=True):
     if train:
         dirlist = dirlist[:split]
     else:
@@ -35,6 +34,10 @@ def iterate_batches(batch_size,split, train=True):
         with open(filename, 'rb') as handle:
             minibatch = pickle.load(handle)
         yield minibatch
+
+def get_dirlist_batches(batch_size):
+    dirlist = sorted(glob.glob('Batches'+str(batch_size)+'/*.pickle'))
+    return dirlist
 
 def dataIterator(df, batch_size):
     #print(df['23e49215068a2bc642fae1cc75cac1e2ea926314'])

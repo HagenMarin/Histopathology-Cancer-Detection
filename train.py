@@ -5,24 +5,27 @@ import torch.nn.functional as F  # this includes tensor functions that we can us
 import torchvision
 import torchvision.datasets as datasets
 import torch.optim as optim
+import matplotlib
+matplotlib.use('WebAgg',force=True)
 import matplotlib.pyplot as plt
 import pickle
 from data_loading import dataIterator
 from data_loading import loadDataframe
 from data_loading import makeTrainDataset
 from data_loading import iterate_batches
+from data_loading import get_dirlist_batches
 import pandas as pd
 from pathlib import Path
+import random
 
 
-
-def accuracy_and_loss( net, loss_function,split,batch_size,device ):
+def accuracy_and_loss( net, loss_function,split,dirlist,device ):
     total_correct = 0 
     total_loss = 0.0 
     total_examples = 0 
     n_batches = 0 
     with torch.no_grad():  # we do not neet to compute the gradients when making predictions on the validation set
-        for data in iterate_batches(batch_size,split,train=False): 
+        for data in iterate_batches(dirlist,split,train=False): 
             images, labels = data
             images, labels = images.to(device), labels.to(device)
             outputs = net(images)
@@ -70,8 +73,9 @@ def main():
         total_examples = 0 
         n_mini_batches = 0
         #trainloader = dataIterator(dataframe,batch_size)
-        
-        trainloader = iterate_batches(batch_size,split)
+        dirlist = get_dirlist_batches(batch_size)
+        random.shuffle(dirlist)
+        trainloader = iterate_batches(dirlist,split)
         for i, mini_batch in enumerate( trainloader, 0):
             images, labels = mini_batch
             #print(i)
@@ -103,7 +107,7 @@ def main():
         epoch_training_accuracy = total_correct / total_examples
         epoch_training_loss = total_loss / n_mini_batches
 
-        epoch_val_accuracy, epoch_val_loss = accuracy_and_loss( thenet, loss_function, split,batch_size,device)
+        epoch_val_accuracy, epoch_val_loss = accuracy_and_loss( thenet, loss_function, split,dirlist,device)
 
         print('Epoch %d loss: %.3f acc: %.3f val_loss: %.3f val_acc: %.3f'
                 %(epoch+1, epoch_training_loss, epoch_training_accuracy, epoch_val_loss, epoch_val_accuracy   ))
@@ -118,7 +122,7 @@ def main():
                 'val_loss': val_loss,
                 'val_acc': val_acc }
     cwd = Path.cwd()
-    torch.save(thenet.state_dict(), str(cwd)+"/model/model.pickle")
+    torch.save(thenet.state_dict(), f"{cwd}/model/model_va_{train_acc[-1]}_ta_{val_acc[-1]}.pickle")
     plt.plot( history['train_acc'], label='train_acc')
     plt.plot( history['val_acc'], label='val_acc')
     plt.legend()
