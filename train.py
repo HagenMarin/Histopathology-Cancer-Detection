@@ -122,7 +122,7 @@ def main():
                 'val_loss': val_loss,
                 'val_acc': val_acc }
     cwd = Path.cwd()
-    torch.save(thenet.state_dict(), f"{cwd}/model/model_va_{train_acc[-1]}_ta_{val_acc[-1]}.pickle")
+    torch.save(thenet.state_dict(), f"{cwd}/model/model_ta_{train_acc[-1]}_va_{val_acc[-1]}.pickle")
     plt.plot( history['train_acc'], label='train_acc')
     plt.plot( history['val_acc'], label='val_acc')
     plt.legend()
