@@ -1,4 +1,4 @@
-from architecture import model_class
+import architecture
 import torch
 import torch.nn as nn
 import torch.nn.functional as F  # this includes tensor functions that we can use in backwards pass
@@ -17,6 +17,7 @@ from data_loading import get_dirlist_batches
 import pandas as pd
 from pathlib import Path
 import random
+from console_parameter_management import get_params
 
 
 def accuracy_and_loss( net, loss_function,split,dirlist,device ):
@@ -56,8 +57,16 @@ def main():
         
 
         
-
-    thenet = model_class()
+    model_name = get_params()
+    match model_name:
+        case 'LeNet_kaiming_normal':
+            thenet = architecture.LeNet_kaiming_normal()
+        case 'LeNet_kn':
+            thenet = architecture.LeNet_kaiming_normal()
+        case 'LeNet':
+            thenet = architecture.LeNet()
+        case _:
+            thenet = architecture.LeNet_kaiming_normal()
     thenet.to(device)
     optimizer1 = optim.Adam( thenet.parameters(), weight_decay=weight_decay )
 
