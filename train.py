@@ -25,6 +25,8 @@ def accuracy_and_loss( net, loss_function,split,dirlist,device ):
     total_correct = 0 
     total_loss = 0.0 
     total_examples = 0 
+    total_positive = 0
+    total_true_positive = 0
     n_batches = 0 
     with torch.no_grad():  # we do not neet to compute the gradients when making predictions on the validation set
         for data in iterate_batches(dirlist,split,train=False): 
@@ -34,14 +36,17 @@ def accuracy_and_loss( net, loss_function,split,dirlist,device ):
             batch_loss = loss_function(outputs, labels) # this is averaged over the batch
             n_batches += 1
             total_loss += batch_loss.item()
+            total_positive = sum(labels).item()
+            total_true_positive = sum(((outputs > 0.5 ) == ( labels > 0.5 ))==(labels>0.5)).item()
             total_correct += sum( (outputs > 0.5 ) == ( labels > 0.5 ) ).item() # number correct in the minibatch
             total_examples += labels.size(0) # the number of labels, which is just the size of the minibatch 
              
     
     accuracy = total_correct / total_examples
+    recall = total_true_positive/total_positive
     mean_loss = total_loss / n_batches
     
-    return ( accuracy, mean_loss )
+    return ( accuracy, recall, mean_loss )
 
 
 def main():
@@ -73,6 +78,7 @@ def main():
     thenet.to(device)
     optimizer1 = optim.Adam( thenet.parameters(), weight_decay=weight_decay )
 
+    val_rec = []
     train_acc = []
     val_acc = []
     train_loss = []
@@ -122,20 +128,22 @@ def main():
         epoch_training_accuracy = total_correct / total_examples
         epoch_training_loss = total_loss / n_mini_batches
 
-        epoch_val_accuracy, epoch_val_loss = accuracy_and_loss( thenet, loss_function, split,dirlist,device)
+        epoch_val_accuracy, epoch_val_recall, epoch_val_loss = accuracy_and_loss( thenet, loss_function, split,dirlist,device)
 
-        print('Epoch %d loss: %.3f acc: %.3f val_loss: %.3f val_acc: %.3f'
-                %(epoch+1, epoch_training_loss, epoch_training_accuracy, epoch_val_loss, epoch_val_accuracy   ))
+        print('Epoch %d loss: %.3f acc: %.3f val_loss: %.3f val_acc: %.3f val_rec: %.3f'
+                %(epoch+1, epoch_training_loss, epoch_training_accuracy, epoch_val_loss, epoch_val_accuracy, epoch_val_recall ))
         
         train_loss.append( epoch_training_loss )
         train_acc.append( epoch_training_accuracy )
         val_loss.append( epoch_val_loss )
         val_acc.append( epoch_val_accuracy )
+        val_rec.append( epoch_val_recall)
 
     history = { 'train_loss': train_loss, 
                 'train_acc': train_acc, 
                 'val_loss': val_loss,
-                'val_acc': val_acc }
+                'val_acc': val_acc,
+                'val_rec': val_rec }
     cwd = Path.cwd()
     if save_name == 'default':
         torch.save(thenet.state_dict(), f"{cwd}/model/{model_name}_ta_{train_acc[-1]}_va_{val_acc[-1]}.pickle")
@@ -143,6 +151,7 @@ def main():
         torch.save(thenet.state_dict(), f"{cwd}/model/{save_name}.pickle")
     plt.plot( history['train_acc'], label='train_acc')
     plt.plot( history['val_acc'], label='val_acc')
+    plt.plot( history['val_rec'], label='val_rec')
     plt.legend()
     plt.show()
 
