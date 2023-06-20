@@ -55,7 +55,7 @@ def main():
     n_epochs = 10
     batch_size=128
     weight_decay=0.0
-    split = int((dataframe.shape[0]/batch_size)*0.7)
+    split = int((dataframe.shape[0]/batch_size)*0.8)
         
 
         
@@ -77,6 +77,9 @@ def main():
     val_acc = []
     train_loss = []
     val_loss = []
+    dirlist = get_dirlist_batches(batch_size)
+    random.seed(42)
+    random.shuffle(dirlist)
 
     for epoch in range(n_epochs): # number of times to loop over the dataset
         
@@ -85,8 +88,7 @@ def main():
         total_examples = 0 
         n_mini_batches = 0
         #trainloader = dataIterator(dataframe,batch_size)
-        dirlist = get_dirlist_batches(batch_size)
-        random.shuffle(dirlist)
+        
         trainloader = iterate_batches(dirlist,split)
         for i, mini_batch in tqdm(enumerate(trainloader, 0), unit="batch", total=split):
         #for i, mini_batch in enumerate( trainloader, 0):
