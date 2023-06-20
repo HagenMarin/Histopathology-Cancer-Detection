@@ -18,6 +18,7 @@ import pandas as pd
 from pathlib import Path
 import random
 from console_parameter_management import get_params
+from tqdm import tqdm
 
 
 def accuracy_and_loss( net, loss_function,split,dirlist,device ):
@@ -44,6 +45,7 @@ def accuracy_and_loss( net, loss_function,split,dirlist,device ):
 
 
 def main():
+    model_name, save_name = get_params()
     use_cuda = torch.cuda.is_available()
     device = torch.device("cuda" if use_cuda else "cpu")
     print("Training on device:"+str(device))
@@ -57,7 +59,7 @@ def main():
         
 
         
-    model_name = get_params()
+    
     match model_name:
         case 'LeNet_kaiming_normal':
             thenet = architecture.LeNet_kaiming_normal()
@@ -66,6 +68,7 @@ def main():
         case 'LeNet':
             thenet = architecture.LeNet()
         case _:
+            model_name = 'LeNet_kn'
             thenet = architecture.LeNet_kaiming_normal()
     thenet.to(device)
     optimizer1 = optim.Adam( thenet.parameters(), weight_decay=weight_decay )
@@ -85,7 +88,8 @@ def main():
         dirlist = get_dirlist_batches(batch_size)
         random.shuffle(dirlist)
         trainloader = iterate_batches(dirlist,split)
-        for i, mini_batch in enumerate( trainloader, 0):
+        for i, mini_batch in tqdm(enumerate(trainloader, 0), unit="batch", total=split):
+        #for i, mini_batch in enumerate( trainloader, 0):
             images, labels = mini_batch
             #print(i)
             images, labels = images.to(device), labels.to(device)
@@ -131,7 +135,10 @@ def main():
                 'val_loss': val_loss,
                 'val_acc': val_acc }
     cwd = Path.cwd()
-    torch.save(thenet.state_dict(), f"{cwd}/model/model_ta_{train_acc[-1]}_va_{val_acc[-1]}.pickle")
+    if save_name == 'default':
+        torch.save(thenet.state_dict(), f"{cwd}/model/{model_name}_ta_{train_acc[-1]}_va_{val_acc[-1]}.pickle")
+    else:
+        torch.save(thenet.state_dict(), f"{cwd}/model/{save_name}.pickle")
     plt.plot( history['train_acc'], label='train_acc')
     plt.plot( history['val_acc'], label='val_acc')
     plt.legend()
