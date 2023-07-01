@@ -21,7 +21,7 @@ from console_parameter_management import get_params
 from tqdm import tqdm
 
 
-def accuracy_and_loss( net, loss_function,split,dirlist,device ):
+def metrics_and_loss( net, loss_function,split,dirlist,device ):
     total_correct = 0 
     total_loss = 0.0 
     total_examples = 0 
@@ -37,7 +37,7 @@ def accuracy_and_loss( net, loss_function,split,dirlist,device ):
             n_batches += 1
             total_loss += batch_loss.item()
             total_positive = sum(labels).item()
-            total_true_positive = sum(((outputs > 0.5 ) == ( labels > 0.5 ))==(labels>0.5)).item()
+            total_true_positive = sum((((outputs > 0.5 ) == ( labels > 0.5 ))+labels-1)>0.5).item()
             total_correct += sum( (outputs > 0.5 ) == ( labels > 0.5 ) ).item() # number correct in the minibatch
             total_examples += labels.size(0) # the number of labels, which is just the size of the minibatch 
              
@@ -128,7 +128,7 @@ def main():
         epoch_training_accuracy = total_correct / total_examples
         epoch_training_loss = total_loss / n_mini_batches
 
-        epoch_val_accuracy, epoch_val_recall, epoch_val_loss = accuracy_and_loss( thenet, loss_function, split,dirlist,device)
+        epoch_val_accuracy, epoch_val_recall, epoch_val_loss = metrics_and_loss( thenet, loss_function, split,dirlist,device)
 
         print('Epoch %d loss: %.3f acc: %.3f val_loss: %.3f val_acc: %.3f val_rec: %.3f'
                 %(epoch+1, epoch_training_loss, epoch_training_accuracy, epoch_val_loss, epoch_val_accuracy, epoch_val_recall ))
