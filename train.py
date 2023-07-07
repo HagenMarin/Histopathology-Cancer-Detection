@@ -48,10 +48,28 @@ def metrics_and_loss( net, loss_function,split,dirlist,device ):
     
     return ( accuracy, recall, mean_loss )
 
+class EarlyStopper:
+    def __init__(self, patience=1, min_delta=0):
+        self.patience = patience
+        self.min_delta = min_delta
+        self.counter = 0
+        self.min_validation_loss = np.inf
+
+    def early_stop(self, validation_loss):
+        if validation_loss < self.min_validation_loss:
+            self.min_validation_loss = validation_loss
+            self.counter = 0
+        elif validation_loss > (self.min_validation_loss + self.min_delta):
+            self.counter += 1
+            if self.counter >= self.patience:
+                return True
+        return False
 
 def main():
-    model_name, save_name = get_params()
+    model_name, save_name, pretrained, pretrained_path, early_stopping = get_params()
     use_cuda = torch.cuda.is_available()
+    #for debugging it is sometimes useful to set the device to cpu as it usually gives more meaningful error messages
+    #device = torch.device("cpu")
     device = torch.device("cuda" if use_cuda else "cpu")
     print("Training on device:"+str(device))
 
@@ -72,9 +90,18 @@ def main():
             thenet = architecture.LeNet_kaiming_normal()
         case 'LeNet':
             thenet = architecture.LeNet()
+        case 'NiN':
+            thenet = architecture.NiN()
+        case 'ResNet':
+            thenet = architecture.ResNet()
+        case 'resnet':
+            thenet = architecture.ResNet()
         case _:
             model_name = 'LeNet_kn'
             thenet = architecture.LeNet_kaiming_normal()
+    if(pretrained):
+        thenet.load_state_dict(torch.load(pretrained_path))
+
     thenet.to(device)
     optimizer1 = optim.Adam( thenet.parameters(), weight_decay=weight_decay )
 
@@ -86,6 +113,7 @@ def main():
     dirlist = get_dirlist_batches(batch_size)
     random.seed(42)
     random.shuffle(dirlist)
+    early_stopper = EarlyStopper(patience=3, min_delta=0)
 
     for epoch in range(n_epochs): # number of times to loop over the dataset
         
@@ -138,6 +166,8 @@ def main():
         val_loss.append( epoch_val_loss )
         val_acc.append( epoch_val_accuracy )
         val_rec.append( epoch_val_recall)
+        if early_stopper.early_stop(epoch_val_loss):             
+            break
 
     history = { 'train_loss': train_loss, 
                 'train_acc': train_acc, 
