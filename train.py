@@ -5,6 +5,7 @@ import torch.nn.functional as F  # this includes tensor functions that we can us
 import torchvision
 import torchvision.datasets as datasets
 import torch.optim as optim
+import numpy as np
 import matplotlib
 matplotlib.use('WebAgg',force=True)
 import matplotlib.pyplot as plt
