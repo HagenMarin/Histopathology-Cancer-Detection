@@ -14,7 +14,7 @@ from data_loading import dataIterator
 from data_loading import loadDataframe
 from data_loading import makeTrainDataset
 from data_loading import iterate_batches
-from data_loading import get_dirlist_batches
+
 import pandas as pd
 from pathlib import Path
 import random
@@ -22,7 +22,7 @@ from console_parameter_management import get_params
 from tqdm import tqdm
 
 
-def metrics_and_loss( net, loss_function,split,dirlist,device ):
+def metrics_and_loss( net, loss_function,device ):
     total_correct = 0 
     total_loss = 0.0 
     total_examples = 0 
@@ -30,7 +30,7 @@ def metrics_and_loss( net, loss_function,split,dirlist,device ):
     total_true_positive = 0
     n_batches = 0 
     with torch.no_grad():  # we do not neet to compute the gradients when making predictions on the validation set
-        for data in iterate_batches(dirlist,split,train=False): 
+        for data in iterate_batches(train=False, shuffle=False): 
             images, labels = data
             images, labels = images.to(device), labels.to(device)
             outputs = net(images)
@@ -79,7 +79,7 @@ def main():
     n_epochs = 10
     batch_size=128
     weight_decay=0.0
-    split = int((dataframe.shape[0]/batch_size)*0.8)
+    #split = int((dataframe.shape[0]/batch_size)*0.8)
         
 
         
@@ -98,8 +98,8 @@ def main():
         case 'resnet':
             thenet = architecture.ResNet()
         case _:
-            model_name = 'LeNet_kn'
-            thenet = architecture.LeNet_kaiming_normal()
+            model_name = 'ResNet'
+            thenet = architecture.ResNet()
     if(pretrained):
         thenet.load_state_dict(torch.load(pretrained_path))
 
@@ -111,9 +111,6 @@ def main():
     val_acc = []
     train_loss = []
     val_loss = []
-    dirlist = get_dirlist_batches(batch_size)
-    random.seed(42)
-    random.shuffle(dirlist)
     early_stopper = EarlyStopper(patience=3, min_delta=0)
 
     for epoch in range(n_epochs): # number of times to loop over the dataset
@@ -124,8 +121,8 @@ def main():
         n_mini_batches = 0
         #trainloader = dataIterator(dataframe,batch_size)
         
-        trainloader = iterate_batches(dirlist,split)
-        for i, mini_batch in tqdm(enumerate(trainloader, 0), unit="batch", total=split):
+        trainloader = iterate_batches()
+        for i, mini_batch in tqdm(enumerate(trainloader, 0), unit="batch", total=int(0.7*(dataframe.shape[0]/batch_size))):
         #for i, mini_batch in enumerate( trainloader, 0):
             images, labels = mini_batch
             #print(i)
@@ -157,7 +154,7 @@ def main():
         epoch_training_accuracy = total_correct / total_examples
         epoch_training_loss = total_loss / n_mini_batches
 
-        epoch_val_accuracy, epoch_val_recall, epoch_val_loss = metrics_and_loss( thenet, loss_function, split,dirlist,device)
+        epoch_val_accuracy, epoch_val_recall, epoch_val_loss = metrics_and_loss( thenet, loss_function,device)
 
         print('Epoch %d loss: %.3f acc: %.3f val_loss: %.3f val_acc: %.3f val_rec: %.3f'
                 %(epoch+1, epoch_training_loss, epoch_training_accuracy, epoch_val_loss, epoch_val_accuracy, epoch_val_recall ))

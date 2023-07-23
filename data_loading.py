@@ -5,6 +5,8 @@ import os
 import cv2
 import pandas as pd
 import pickle
+import random
+
 
 def loadDataframe():
     cwd = Path.cwd()
@@ -18,28 +20,49 @@ def create_batches(batch_size):
     cwd = Path.cwd()
     
     dataframe = loadDataframe()
-    trainloader = dataIterator(dataframe,batch_size)
+    print('generating train batches')
+    trainloader = dataIterator(dataframe,batch_size, 0,0.7,0.15)
     for i, minibatch in enumerate(trainloader,0):
-        filename = str(cwd)+ '/Batches'+str(batch_size)+'/batch_'+str(i)+'.pickle'
+        filename = str(cwd)+ '/train_batches'+str(batch_size)+'/batch_'+str(i)+'.pickle'
+        print(filename)
+        with open(filename, 'wb+') as handle:
+            pickle.dump(minibatch, handle, protocol=pickle.HIGHEST_PROTOCOL)
+    print('generating valid batches')
+    trainloader = dataIterator(dataframe,batch_size, 1,0.7,0.15)
+    for i, minibatch in enumerate(trainloader,0):
+        filename = str(cwd)+ '/valid_batches'+str(batch_size)+'/batch_'+str(i)+'.pickle'
+        print(filename)
+        with open(filename, 'wb+') as handle:
+            pickle.dump(minibatch, handle, protocol=pickle.HIGHEST_PROTOCOL)
+    print('generating test batches')
+    trainloader = dataIterator(dataframe,batch_size, 2,0.7,0.15)
+    for i, minibatch in enumerate(trainloader,0):
+        filename = str(cwd)+ '/test_batches'+str(batch_size)+'/batch_'+str(i)+'.pickle'
         print(filename)
         with open(filename, 'wb+') as handle:
             pickle.dump(minibatch, handle, protocol=pickle.HIGHEST_PROTOCOL)
 
-def iterate_batches(dirlist, split, train=True):
+def iterate_batches(batch_size = 128, train=True, shuffle=True):
     if train:
-        dirlist = dirlist[:split]
+        dirlist = get_train_dirlist(batch_size)
     else:
-        dirlist = dirlist[split:]
+        dirlist = get_valid_dirlist(batch_size)
+    if shuffle:
+        random.shuffle(dirlist)
     for i, filename in enumerate(dirlist):
         with open(filename, 'rb') as handle:
             minibatch = pickle.load(handle)
         yield minibatch
 
-def get_dirlist_batches(batch_size):
-    dirlist = sorted(glob.glob('Batches'+str(batch_size)+'/*.pickle'))
+def get_train_dirlist(batch_size):
+    dirlist = sorted(glob.glob('train_batches'+str(batch_size)+'/*.pickle'))
     return dirlist
 
-def dataIterator(df, batch_size):
+def get_valid_dirlist(batch_size):
+    dirlist = sorted(glob.glob('valid_batches'+str(batch_size)+'/*.pickle'))
+    return dirlist
+
+def dataIterator(df, batch_size,mode, train_size, valid_size):
     #print(df['23e49215068a2bc642fae1cc75cac1e2ea926314'])
     cwd = Path.cwd()
     df = df.to_numpy()
@@ -47,12 +70,24 @@ def dataIterator(df, batch_size):
     dirlist = sorted(glob.glob('train/*.tif'))
     print(df.shape[0])
     print(batch_size)
-    for i in range(0,df.shape[0]-batch_size,batch_size):
+    print(len(dirlist))
+    indexes = [i for i in range(len(dirlist))]
+    random.seed(42)
+    random.shuffle(indexes)
+    if (mode == 0):
+        indexes = indexes[:int(train_size*len(indexes))]
+    elif (mode == 1):
+        indexes = indexes[int(train_size*len(indexes)):int(train_size*len(indexes))+int(valid_size*len(indexes))]
+    else:
+        indexes = indexes[int(train_size*len(indexes))+int(valid_size*len(indexes)):]
+    index_batches = [[indexes[i] for i in range(n,n+batch_size)] for n in range(0,len(indexes)-batch_size,batch_size)]
+    for index_batch in index_batches:
+        #print(index_batch)
         batch_imgs = torch.empty((batch_size,3,96,96),dtype=torch.float32)
         batch_labels = torch.empty((batch_size,1),dtype=torch.float32)
         for n in range(batch_size):
             #print("Current File Being Processed is: " + str(i+n))
-            infile = dirlist[i+n]
+            infile = dirlist[index_batch[n]]
             filename = os.path.join(cwd, infile)
             image = cv2.imread(filename)
             img = image.astype(float)/255
@@ -60,7 +95,7 @@ def dataIterator(df, batch_size):
             #print(img)
             #print(img.shape)
             batch_imgs[n]=torch.tensor(img,dtype=torch.float64)
-            batch_labels[n]=torch.tensor(float(df[i+n,1]),dtype=torch.float64)
+            batch_labels[n]=torch.tensor(float(df[index_batch[n],1]),dtype=torch.float64)
         yield (batch_imgs,batch_labels)
 '''
 class preloadDataIterator():
