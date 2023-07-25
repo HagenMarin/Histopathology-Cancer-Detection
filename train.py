@@ -1,4 +1,6 @@
 import architecture
+from architecture import ResNet18
+from architecture import BasicBlock
 import torch
 import torch.nn as nn
 import torch.nn.functional as F  # this includes tensor functions that we can use in backwards pass
@@ -90,6 +92,7 @@ def main():
         case 'LeNet_kn':
             thenet = architecture.LeNet_kaiming_normal()
         case 'LeNet':
+            #added as a fun reference, because it was showcased in the course
             thenet = architecture.LeNet()
         case 'NiN':
             thenet = architecture.NiN()
@@ -97,6 +100,32 @@ def main():
             thenet = architecture.ResNet()
         case 'resnet':
             thenet = architecture.ResNet()
+        case 'ResNet18':
+            model = torch.hub.load('pytorch/vision:v0.10.0', 'resnet18', pretrained=True)
+            thenet = ResNet18(img_channels=3, num_layers=18, block=BasicBlock, num_classes=1)
+            pretrained_dict = model.state_dict()
+            model_dict = thenet.state_dict()
+            # 1. filter out unnecessary keys
+            pretrained_dict = {k: v for k, v in pretrained_dict.items() if k in model_dict}
+            #resetting the last fully connected layer, because the Pretrained model has 1000 classes
+            pretrained_dict['fc.weight'] = torch.rand((1,512))/200
+            pretrained_dict['fc.bias'] = torch.rand(1)/200
+            '''pretrained_dict['bn2.weight'] = torch.ones(512)
+            pretrained_dict['bn2.bias'] = torch.rand((512))
+            pretrained_dict['bn2.running_mean'] = torch.rand(512)
+            pretrained_dict['bn2.running_var'] = torch.rand(512)'''
+            # 2. overwrite entries in the existing state dict
+            model_dict.update(pretrained_dict) 
+            
+            # 3. load the new state dict
+            thenet.load_state_dict(pretrained_dict)
+            #freezing first layers, to combat overfitting 
+            thenet.conv1.requires_grad_(False)
+            thenet.bn1.requires_grad_(False)
+            #thenet.layer1.requires_grad_(False)
+            #thenet.layer2.requires_grad_(False)
+            #thenet.layer3.requires_grad_(False)
+            #thenet.layer4.requires_grad_(False)
         case _:
             model_name = 'ResNet'
             thenet = architecture.ResNet()
@@ -121,6 +150,7 @@ def main():
         n_mini_batches = 0
         #trainloader = dataIterator(dataframe,batch_size)
         
+        #trainloader reads the batches from storage and provides them in the format (images, labels)
         trainloader = iterate_batches()
         for i, mini_batch in tqdm(enumerate(trainloader, 0), unit="batch", total=int(0.7*(dataframe.shape[0]/batch_size))):
         #for i, mini_batch in enumerate( trainloader, 0):
@@ -142,7 +172,7 @@ def main():
             optimizer1.step() # does one optimisation step
 
             n_mini_batches += 1 # keep track of number of minibatches, and collect the loss for each minibatch
-            total_loss += loss.item() # remember that the loss is a zero-order tensor
+            total_loss += loss.item() # loss is a zero-order tensor
             # so that to extract its value, we use .item(), as we cannot index as there are no dimensions
 
             # keep track of number of examples, and collect number correct in each minibatch
@@ -150,7 +180,6 @@ def main():
             total_examples += len( labels )
 
         # calculate statistics for each epoch and print them. 
-        # You can alter this code to accumulate these statistics into lists/vectors and plot them
         epoch_training_accuracy = total_correct / total_examples
         epoch_training_loss = total_loss / n_mini_batches
 
@@ -164,6 +193,7 @@ def main():
         val_loss.append( epoch_val_loss )
         val_acc.append( epoch_val_accuracy )
         val_rec.append( epoch_val_recall)
+        #making sure that we dont diverge because of overfitting
         if early_stopper.early_stop(epoch_val_loss):             
             break
 
@@ -173,6 +203,7 @@ def main():
                 'val_acc': val_acc,
                 'val_rec': val_rec }
     cwd = Path.cwd()
+    #saving the model
     if save_name == 'default':
         torch.save(thenet.state_dict(), f"{cwd}/model/{model_name}_ta_{train_acc[-1]}_va_{val_acc[-1]}.pickle")
     else:

@@ -7,7 +7,7 @@ import pandas as pd
 import pickle
 import random
 
-
+#load the provided csv into a Pandas Dataframe and sort it by the id, to later match the images more easily
 def loadDataframe():
     cwd = Path.cwd()
     filename = os.path.join(cwd, 'train_labels.csv')
@@ -15,7 +15,7 @@ def loadDataframe():
     df = df.sort_values('id')
     return df
 
-
+#creates the individual batches and stores them in 3 seperate paths for training, validation and testing
 def create_batches(batch_size):
     cwd = Path.cwd()
     
@@ -42,6 +42,7 @@ def create_batches(batch_size):
         with open(filename, 'wb+') as handle:
             pickle.dump(minibatch, handle, protocol=pickle.HIGHEST_PROTOCOL)
 
+#iterates over the premade batches by loading them from storage one by one
 def iterate_batches(batch_size = 128, train=True, shuffle=True):
     if train:
         dirlist = get_train_dirlist(batch_size)
@@ -54,14 +55,17 @@ def iterate_batches(batch_size = 128, train=True, shuffle=True):
             minibatch = pickle.load(handle)
         yield minibatch
 
+#returns a list of all the batch files contained in the train batch path
 def get_train_dirlist(batch_size):
     dirlist = sorted(glob.glob('train_batches'+str(batch_size)+'/*.pickle'))
     return dirlist
 
+#returns a list of all the batch files contained in the valid batch path
 def get_valid_dirlist(batch_size):
     dirlist = sorted(glob.glob('valid_batches'+str(batch_size)+'/*.pickle'))
     return dirlist
 
+#creates batches by loading the individual images and matching them to the labels
 def dataIterator(df, batch_size,mode, train_size, valid_size):
     #print(df['23e49215068a2bc642fae1cc75cac1e2ea926314'])
     cwd = Path.cwd()
@@ -108,7 +112,7 @@ class preloadDataIterator():
         self.batch_size = batch_size
 '''        
 
-
+'''
 def dataIteratorPreload(df, batch_size):
     #print(df['23e49215068a2bc642fae1cc75cac1e2ea926314'])
     cwd = Path.cwd()
@@ -137,8 +141,9 @@ def dataIteratorPreload(df, batch_size):
                 #print("Current File Being Processed is: " + str(i+n))
                 batch_imgs[n]=imgs[i+n]
                 batch_labels[n]=torch.tensor(float(df[i+n,1]),dtype=torch.float64)
-            yield (batch_imgs,batch_labels)
+            yield (batch_imgs,batch_labels)'''
 
+#creates an array of all the batches, requires a lot of memory (it is recommended to use iterate batches instead)
 def makeTrainDataset(df, size):
     datasetArr = []
     for i, instance in enumerate(dataIterator(df,1)):
