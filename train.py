@@ -52,21 +52,25 @@ def metrics_and_loss( net, loss_function,device ):
     return ( accuracy, recall, mean_loss )
 
 class EarlyStopper:
-    def __init__(self, patience=1, min_delta=0):
+    def __init__(self,model, patience=1, min_delta=0):
         self.patience = patience
         self.min_delta = min_delta
         self.counter = 0
         self.min_validation_loss = np.inf
+        self.best_model = model
 
-    def early_stop(self, validation_loss):
+    def early_stop(self, validation_loss, model):
         if validation_loss < self.min_validation_loss:
             self.min_validation_loss = validation_loss
             self.counter = 0
+            self.best_model = model
         elif validation_loss > (self.min_validation_loss + self.min_delta):
             self.counter += 1
             if self.counter >= self.patience:
                 return True
         return False
+    def get_best_model(self):
+        return self.best_model
 
 def main():
     model_name, save_name, pretrained, pretrained_path, early_stopping = get_params()
@@ -78,7 +82,7 @@ def main():
 
     dataframe = loadDataframe()
     loss_function = nn.BCELoss() 
-    n_epochs = 10
+    n_epochs = 50
     batch_size=128
     weight_decay=0.0
     #split = int((dataframe.shape[0]/batch_size)*0.8)
@@ -120,8 +124,8 @@ def main():
             # 3. load the new state dict
             thenet.load_state_dict(pretrained_dict)
             #freezing first layers, to combat overfitting 
-            thenet.conv1.requires_grad_(False)
-            thenet.bn1.requires_grad_(False)
+            #thenet.conv1.requires_grad_(False)
+            #thenet.bn1.requires_grad_(False)
             #thenet.layer1.requires_grad_(False)
             #thenet.layer2.requires_grad_(False)
             #thenet.layer3.requires_grad_(False)
@@ -140,7 +144,7 @@ def main():
     val_acc = []
     train_loss = []
     val_loss = []
-    early_stopper = EarlyStopper(patience=3, min_delta=0)
+    early_stopper = EarlyStopper(thenet,patience=4, min_delta=0.01)
 
     for epoch in range(n_epochs): # number of times to loop over the dataset
         
@@ -194,7 +198,7 @@ def main():
         val_acc.append( epoch_val_accuracy )
         val_rec.append( epoch_val_recall)
         #making sure that we dont diverge because of overfitting
-        if early_stopper.early_stop(epoch_val_loss):             
+        if early_stopper.early_stop(epoch_val_loss, thenet):             
             break
 
     history = { 'train_loss': train_loss, 
@@ -205,9 +209,9 @@ def main():
     cwd = Path.cwd()
     #saving the model
     if save_name == 'default':
-        torch.save(thenet.state_dict(), f"{cwd}/model/{model_name}_ta_{train_acc[-1]}_va_{val_acc[-1]}.pickle")
+        torch.save(early_stopper.get_best_model().state_dict(), f"{cwd}/model/{model_name}_ta_{train_acc[-1]}_va_{val_acc[-1]}.pickle")
     else:
-        torch.save(thenet.state_dict(), f"{cwd}/model/{save_name}.pickle")
+        torch.save(early_stopper.get_best_model().state_dict(), f"{cwd}/model/{save_name}.pickle")
     plt.plot( history['train_acc'], label='train_acc')
     plt.plot( history['val_acc'], label='val_acc')
     plt.plot( history['val_rec'], label='val_rec')

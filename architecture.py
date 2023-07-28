@@ -134,6 +134,16 @@ class ResNet(nn.Module):
                     torch.nn.BatchNorm2d(32),
                 )
             ),
+            ResidualBlock(
+                torch.nn.Sequential(
+                    torch.nn.Conv2d(32, 32, kernel_size=3,padding=self.padding),
+                    torch.nn.ReLU(),
+                    torch.nn.BatchNorm2d(32),
+                    torch.nn.Conv2d(32, 32, kernel_size=3,padding=self.padding),
+                    torch.nn.ReLU(),
+                    torch.nn.BatchNorm2d(32),
+                )
+            ),
             # Pool all the 32 filters to 1, you may need to use `torch.squeeze after this layer`
             torch.nn.AdaptiveAvgPool2d(1),
             torch.nn.Flatten(),
@@ -225,11 +235,15 @@ class ResNet18(nn.Module):
         self.relu = nn.ReLU(inplace=True)
         self.maxpool = nn.MaxPool2d(kernel_size=3, stride=2, padding=1)
         self.layer1 = self._make_layer(block, 64, layers[0])
+        self.dropout1 = nn.Dropout(0.3)
         self.layer2 = self._make_layer(block, 128, layers[1], stride=2)
+        self.dropout2 = nn.Dropout(0.6)
         self.layer3 = self._make_layer(block, 256, layers[2], stride=2)
+        self.dropout3 = nn.Dropout(0.7)
         self.layer4 = self._make_layer(block, 512, layers[3], stride=2)
         self.avgpool = nn.AdaptiveAvgPool2d((1, 1))
         #self.bn2 = nn.BatchNorm2d(512*self.expansion)
+        self.dropout = nn.Dropout(0.4)
         self.fc = nn.Linear(512*self.expansion, num_classes)
         self.sig = nn.Sigmoid()
     def _make_layer(
@@ -277,8 +291,11 @@ class ResNet18(nn.Module):
         x = self.relu(x)
         x = self.maxpool(x)
         x = self.layer1(x)
+        x = self.dropout1(x)
         x = self.layer2(x)
+        x = self.dropout2(x)
         x = self.layer3(x)
+        x = self.dropout3(x)
         x = self.layer4(x)
         # The spatial dimension of the final layer's feature 
         # map should be (7, 7) for all ResNets.
@@ -286,6 +303,7 @@ class ResNet18(nn.Module):
         x = self.avgpool(x)
         #x = self.bn2(x)
         x = torch.flatten(x, 1)
+        x = self.dropout(x)
         x = self.fc(x)
         x = self.sig(x)
         return x
