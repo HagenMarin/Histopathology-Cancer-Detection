@@ -5,18 +5,26 @@ import cv2
 from pathlib import Path
 import glob
 from data_loading import iterate_batches
+from data_loading import get_combined_dirlist
+from data_loading import loadDataframe
+from data_loading import dataIterator
+from data_loading import dataIterator_ids
 
-model = architecture.LeNet_kaiming_normal()
-model.load_state_dict(torch.load('model/LeNet_kn_ta_0.8631193181818182_va_0.7842565597667639.pickle'))
-cwd = Path.cwd()
-dirlist = sorted(glob.glob('train/*.tif'))
-infile = dirlist[0]
-print(infile)
-filename = os.path.join(cwd, infile)
-image = cv2.imread(filename)
-img = image.astype(float)/255
-img = img.reshape((3,96,96))
-batch = torch.empty((1,3,96,96),dtype=torch.float32)
-batch[0] = torch.tensor(img,dtype=torch.float64)
-print(model(batch)[0])
+model = architecture.ResNet()
+model.load_state_dict(torch.load('model/ResNet_ta_0.910958904109589_va_0.8849957191780822.pickle'))
+df = loadDataframe()
+trainloader = dataIterator_ids(df,128, 0,0.7,0.15)
+for batch, labels, ids in trainloader:
+    outputs = model(batch)
+    for i, ouput in enumerate(outputs):
+        if (ouput>0.5) != labels[i]:
+            print('output:' + str(ouput))
+            print('label:' + str(labels[i]))
+            print(ids[i])
+    #print(>0.5)
+    print(sum( (outputs > 0.5 ) == ( labels > 0.5 ) ).item())
+    quit()
+
+
+
 

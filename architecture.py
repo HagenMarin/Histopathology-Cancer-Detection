@@ -98,19 +98,19 @@ class NiN( nn.Module ):
         return x
     
 class ResidualBlock(nn.Module):
-    def __init__(self, module):
+    def __init__(self, module: nn.Module) -> None:
         super().__init__()
         self.module = module
 
-    def forward(self, inputs):
+    def forward(self, inputs) -> torch.Tensor:
         return self.module(inputs) + inputs
     
 class ResNet(nn.Module):
-    def __init__(self): 
+    def __init__(self) -> None: 
         super(ResNet, self).__init__()
         self.padding = 1
         self.layers = torch.nn.Sequential(
-            torch.nn.Conv2d(3, 32, kernel_size=7),
+            torch.nn.Conv2d(3, 32, kernel_size=4),
             # 32 filters in and out, no max pooling so the shapes can be added
             ResidualBlock(
                 torch.nn.Sequential(
@@ -134,16 +134,17 @@ class ResNet(nn.Module):
                     torch.nn.BatchNorm2d(32),
                 )
             ),
-            ResidualBlock(
-                torch.nn.Sequential(
-                    torch.nn.Conv2d(32, 32, kernel_size=3,padding=self.padding),
-                    torch.nn.ReLU(),
-                    torch.nn.BatchNorm2d(32),
-                    torch.nn.Conv2d(32, 32, kernel_size=3,padding=self.padding),
-                    torch.nn.ReLU(),
-                    torch.nn.BatchNorm2d(32),
-                )
-            ),
+            #ResidualBlock(
+            #    torch.nn.Sequential(
+            #        torch.nn.Conv2d(32, 32, kernel_size=3,padding=self.padding),
+            #        torch.nn.ReLU(),
+            #        torch.nn.BatchNorm2d(32),
+            #        torch.nn.Conv2d(32, 32, kernel_size=3,padding=self.padding),
+            #        torch.nn.ReLU(),
+            #        torch.nn.BatchNorm2d(32),
+            #    )
+            #),
+            #nn.Dropout(0.2),
             # Pool all the 32 filters to 1, you may need to use `torch.squeeze after this layer`
             torch.nn.AdaptiveAvgPool2d(1),
             torch.nn.Flatten(),
@@ -152,7 +153,7 @@ class ResNet(nn.Module):
             nn.Sigmoid()
         )
 
-    def forward( self, x ): # computes the forward pass ... this one is particularly simple
+    def forward( self, x )  -> torch.Tensor: # computes the forward pass ... this one is particularly simple
         x = self.layers( x )
         return x
 
@@ -235,15 +236,15 @@ class ResNet18(nn.Module):
         self.relu = nn.ReLU(inplace=True)
         self.maxpool = nn.MaxPool2d(kernel_size=3, stride=2, padding=1)
         self.layer1 = self._make_layer(block, 64, layers[0])
-        self.dropout1 = nn.Dropout(0.3)
+        self.dropout1 = nn.Dropout(0.5)
         self.layer2 = self._make_layer(block, 128, layers[1], stride=2)
-        self.dropout2 = nn.Dropout(0.6)
+        self.dropout2 = nn.Dropout(0.7)
         self.layer3 = self._make_layer(block, 256, layers[2], stride=2)
-        self.dropout3 = nn.Dropout(0.7)
+        self.dropout3 = nn.Dropout(0.8)
         self.layer4 = self._make_layer(block, 512, layers[3], stride=2)
         self.avgpool = nn.AdaptiveAvgPool2d((1, 1))
         #self.bn2 = nn.BatchNorm2d(512*self.expansion)
-        self.dropout = nn.Dropout(0.4)
+        self.dropout = nn.Dropout(0.5)
         self.fc = nn.Linear(512*self.expansion, num_classes)
         self.sig = nn.Sigmoid()
     def _make_layer(
