@@ -1,5 +1,6 @@
 import torch
 import torch.nn as nn
+from torchvision import transforms
 from typing import Type
 
 class LeNet_kaiming_normal( nn.Module ):
@@ -96,7 +97,31 @@ class NiN( nn.Module ):
     def forward( self, x ): # computes the forward pass ... this one is particularly simple
         x = self.layers( x )
         return x
-    
+
+class DenseModel(nn.Module):
+    def __init__(self) -> None: 
+        super(DenseModel, self).__init__()
+        self.layers = torch.nn.Sequential(
+            torch.nn.AdaptiveMaxPool2d((32,32)),
+            torch.nn.Flatten(),
+            torch.nn.BatchNorm1d(3072),
+            torch.nn.Dropout(0.8),
+            torch.nn.Linear(3072, 512),
+            torch.nn.ReLU(),
+            torch.nn.BatchNorm1d(512),
+            torch.nn.Dropout(0.8),
+            torch.nn.Linear(512, 256),
+            torch.nn.ReLU(),
+            torch.nn.BatchNorm1d(256),
+            torch.nn.Dropout(0.8),
+            torch.nn.Linear(256, 1),
+            nn.Sigmoid()
+        )
+
+    def forward( self, x )  -> torch.Tensor: # computes the forward pass ... this one is particularly simple
+        x = self.layers( x )
+        return x
+
 class ResidualBlock(nn.Module):
     def __init__(self, module: nn.Module) -> None:
         super().__init__()
@@ -110,6 +135,9 @@ class ResNet(nn.Module):
         super(ResNet, self).__init__()
         self.padding = 1
         self.layers = torch.nn.Sequential(
+            # transforms.RandomRotation(180),
+            # transforms.RandomHorizontalFlip(0.3),
+            # transforms.ColorJitter(0.1,0.1,0.1,0.1),
             torch.nn.Conv2d(3, 32, kernel_size=4),
             # 32 filters in and out, no max pooling so the shapes can be added
             ResidualBlock(
@@ -134,7 +162,7 @@ class ResNet(nn.Module):
                     torch.nn.BatchNorm2d(32),
                 )
             ),
-            #ResidualBlock(
+            # ResidualBlock(
             #    torch.nn.Sequential(
             #        torch.nn.Conv2d(32, 32, kernel_size=3,padding=self.padding),
             #        torch.nn.ReLU(),
@@ -143,7 +171,7 @@ class ResNet(nn.Module):
             #        torch.nn.ReLU(),
             #        torch.nn.BatchNorm2d(32),
             #    )
-            #),
+            # ),
             #nn.Dropout(0.2),
             # Pool all the 32 filters to 1, you may need to use `torch.squeeze after this layer`
             torch.nn.AdaptiveAvgPool2d(1),
@@ -224,6 +252,10 @@ class ResNet18(nn.Module):
         self.in_channels = 64
         # All ResNets (18 to 152) contain a Conv2d => BN => ReLU for the first
         # three layers. Here, kernel size is 7.
+        self.transform1 = transforms.RandomRotation(180)
+        self.transform2 = transforms.RandomHorizontalFlip(0.3)
+        self.transform3 = transforms.ColorJitter(0.1,0.1,0.1,0.1)
+        
         self.conv1 = nn.Conv2d(
             in_channels=img_channels,
             out_channels=self.in_channels,
@@ -240,7 +272,7 @@ class ResNet18(nn.Module):
         self.layer2 = self._make_layer(block, 128, layers[1], stride=2)
         self.dropout2 = nn.Dropout(0.7)
         self.layer3 = self._make_layer(block, 256, layers[2], stride=2)
-        self.dropout3 = nn.Dropout(0.8)
+        self.dropout3 = nn.Dropout(0.6)
         self.layer4 = self._make_layer(block, 512, layers[3], stride=2)
         self.avgpool = nn.AdaptiveAvgPool2d((1, 1))
         #self.bn2 = nn.BatchNorm2d(512*self.expansion)
@@ -287,14 +319,18 @@ class ResNet18(nn.Module):
             ))
         return nn.Sequential(*layers)
     def forward(self, x: torch.Tensor) -> torch.Tensor:
+        if self.training:
+            x = self.transform1(x)
+            x = self.transform2(x)
+            #x = self.transform3(x)
         x = self.conv1(x)
         x = self.bn1(x)
         x = self.relu(x)
         x = self.maxpool(x)
         x = self.layer1(x)
-        x = self.dropout1(x)
+        #x = self.dropout1(x)
         x = self.layer2(x)
-        x = self.dropout2(x)
+        #x = self.dropout2(x)
         x = self.layer3(x)
         x = self.dropout3(x)
         x = self.layer4(x)

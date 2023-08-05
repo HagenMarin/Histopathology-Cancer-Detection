@@ -42,6 +42,14 @@ def create_batches(batch_size):
         with open(filename, 'wb+') as handle:
             pickle.dump(minibatch, handle, protocol=pickle.HIGHEST_PROTOCOL)
 
+#iterates over the premade test batches by loading them from storage one by one
+def iterate_test_batches(batch_size = 128):
+    dirlist = get_test_dirlist(batch_size)
+    for i, filename in enumerate(dirlist):
+        with open(filename, 'rb') as handle:
+            minibatch = pickle.load(handle)
+        yield minibatch
+
 #iterates over the premade batches by loading them from storage one by one
 def iterate_batches(batch_size = 128, train=True, shuffle=True):
     if train:
@@ -87,6 +95,10 @@ def get_train_dirlist(batch_size):
 #returns a list of all the batch files contained in the valid batch path
 def get_valid_dirlist(batch_size):
     dirlist = sorted(glob.glob('valid_batches'+str(batch_size)+'/*.pickle'))
+    return dirlist
+
+def get_test_dirlist(batch_size):
+    dirlist = sorted(glob.glob('test_batches'+str(batch_size)+'/*.pickle'))
     return dirlist
 
 #creates batches by loading the individual images and matching them to the labels; mode = 0 : train, mode = 1 : valid, mode = 2 : test
