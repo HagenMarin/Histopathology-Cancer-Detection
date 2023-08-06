@@ -186,7 +186,7 @@ class ResNet(nn.Module):
         return x
 
 
-#ResNet18 implementation from here:https://debuggercafe.com/implementing-resnet18-in-pytorch-from-scratch/
+#ResNet18 implementation from here:https://github.com/pytorch/vision/blob/main/torchvision/models/resnet.py
 
 class BasicBlock(nn.Module):
     def __init__(
