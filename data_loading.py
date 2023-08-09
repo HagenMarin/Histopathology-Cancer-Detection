@@ -8,9 +8,12 @@ import pickle
 import random
 
 #load the provided csv into a Pandas Dataframe and sort it by the id, to later match the images more easily
-def loadDataframe():
-    cwd = Path.cwd()
-    filename = os.path.join(cwd, 'train_labels.csv')
+def loadDataframe(dir = ''):
+    if dir == '':
+        cwd = Path.cwd()
+        filename = os.path.join(cwd, 'train_labels.csv')
+    else:
+        filename = dir + 'train_labels.csv'
     df = pd.read_csv(filename)
     df = df.sort_values('id')
     return df
