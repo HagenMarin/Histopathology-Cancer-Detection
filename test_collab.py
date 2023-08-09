@@ -56,7 +56,7 @@ def metrics_test_TTA(net,device, dir = ''):
     recall = metrics.recall_score(all_labels,all_class_preds)
     f1_score = metrics.f1_score(all_labels,all_class_preds)
     
-    return ( accuracy,f1_score,auc_score, recall )
+    return ( all_labels, all_class_preds, accuracy,f1_score,auc_score, recall )
 
 def metrics_test(net,device, dir = ''):
     all_labels = []
@@ -80,7 +80,7 @@ def metrics_test(net,device, dir = ''):
     recall = metrics.recall_score(all_labels,all_class_preds)
     f1_score = metrics.f1_score(all_labels,all_class_preds)
     
-    return ( accuracy,f1_score,auc_score, recall )
+    return ( all_labels, all_class_preds, accuracy,f1_score,auc_score, recall )
 
 
 def metrics_and_loss(net, loss_function,device ):
