@@ -55,13 +55,13 @@ def metrics_test_TTA(net,device):
     
     return ( accuracy,f1_score,auc_score, recall )
 
-def metrics_test(net,device):
+def metrics_test(net,device, dir = ''):
     all_labels = []
     all_preds = []
     all_class_preds = []
     #net.eval()
     with torch.no_grad():  # we do not neet to compute the gradients when making predictions on the validation set kfolds = 4, currentfold = 0, batch_size = 128, train=True, shuffle=True
-        for data in iterate_test_batches(): 
+        for data in iterate_test_batches(dir = dir): 
             images, labels = data
             images, labels = images.to(device), labels.to(device)
             outputs = net(images)
