@@ -46,8 +46,8 @@ def create_batches(batch_size):
             pickle.dump(minibatch, handle, protocol=pickle.HIGHEST_PROTOCOL)
 
 #iterates over the premade test batches by loading them from storage one by one
-def iterate_test_batches(batch_size = 128):
-    dirlist = get_test_dirlist(batch_size)
+def iterate_test_batches(batch_size = 128, dir = ''):
+    dirlist = get_test_dirlist(batch_size, dir)
     for i, filename in enumerate(dirlist):
         with open(filename, 'rb') as handle:
             minibatch = pickle.load(handle)
@@ -100,8 +100,8 @@ def get_valid_dirlist(batch_size):
     dirlist = sorted(glob.glob('valid_batches'+str(batch_size)+'/*.pickle'))
     return dirlist
 
-def get_test_dirlist(batch_size):
-    dirlist = sorted(glob.glob('test_batches'+str(batch_size)+'/*.pickle'))
+def get_test_dirlist(batch_size, dir = ''):
+    dirlist = sorted(glob.glob(dir + 'test_batches'+str(batch_size)+'/*.pickle'))
     return dirlist
 
 def get_num_pos_samples_and_size(dataframe, batch_size, mode, train_size, valid_size):
