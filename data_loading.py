@@ -101,13 +101,33 @@ def get_test_dirlist(batch_size):
     dirlist = sorted(glob.glob('test_batches'+str(batch_size)+'/*.pickle'))
     return dirlist
 
+def get_num_pos_samples_and_size(dataframe, batch_size, mode, train_size, valid_size):
+    # trainloader = dataIterator(dataframe,batch_size, 0,0.7,0.15)
+    indexes = [i for i in range(dataframe.shape[0])]
+    random.seed(42)
+    random.shuffle(indexes)
+    if (mode == 0):
+        indexes = indexes[:int(train_size*len(indexes))]
+    elif (mode == 1):
+        indexes = indexes[int(train_size*len(indexes)):int(train_size*len(indexes))+int(valid_size*len(indexes))]
+    else:
+        indexes = indexes[int(train_size*len(indexes))+int(valid_size*len(indexes)):]
+    index_batches = [[indexes[i] for i in range(n,n+batch_size)] for n in range(0,len(indexes)-batch_size,batch_size)]
+    size = len(index_batches) * batch_size
+    dataframe = dataframe.to_numpy()
+    num_pos_samples = 0
+    for batch in index_batches:
+        for i in range(batch_size):
+            num_pos_samples += dataframe[batch[i],1]
+    return num_pos_samples, size
+
 #creates batches by loading the individual images and matching them to the labels; mode = 0 : train, mode = 1 : valid, mode = 2 : test
-def dataIterator(df, batch_size,mode, train_size, valid_size):
+def dataIterator(df, batch_size,mode, train_size, valid_size, dir = 'train/'):
     #print(df['23e49215068a2bc642fae1cc75cac1e2ea926314'])
     cwd = Path.cwd()
     df = df.to_numpy()
     count = 0
-    dirlist = sorted(glob.glob('train/*.tif'))
+    dirlist = sorted(glob.glob(dir+'*.tif'))
     print(df.shape[0])
     print(batch_size)
     print(len(dirlist))
