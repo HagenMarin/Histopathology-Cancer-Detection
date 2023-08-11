@@ -1,5 +1,5 @@
 # Histopathology-Cancer-Detection
-
+https://github.com/HagenMarin/Histopathology-Cancer-Detection.git
 used libraries:
 
 Pytorch\
