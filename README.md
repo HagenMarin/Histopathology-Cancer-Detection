@@ -1,5 +1,6 @@
 # Histopathology-Cancer-Detection
 https://github.com/HagenMarin/Histopathology-Cancer-Detection.git \
+Model files are in the Github repository and can also be found here: https://drive.google.com/drive/folders/1GIYPgyaLMV-HMPyDOagjZHL32Vt3XBfm?usp=sharing \
 used libraries:
 
 Pytorch\
