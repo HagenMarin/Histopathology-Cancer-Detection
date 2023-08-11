@@ -1,15 +1,16 @@
 # Histopathology-Cancer-Detection
 
 used libraries:
-Pytorch
-Torchvision
-pathlib
-glob
-cv2
-pandas
-pickle
-scikit learn
-numpy
+
+Pytorch\
+Torchvision\
+pathlib\
+glob\
+cv2\
+pandas\
+pickle\
+scikit learn\
+numpy\
 matplotlib
 
 Setup:
@@ -21,8 +22,8 @@ Setup:
 6. if you get an error make sure all of the used libraries are installed in your env
 7. create an empty folder called model
 
-Training:
+Training:\
 run train.py (you can use "python train.py -h" or "python train.py -help" to see all the commandline options)
 
-Collab:
+Collab:\
 if you want to run the collab yourself you need to upload the folder "test_batches128" and the file "train_labels.csv" into your google drive (after running run_to_create_batches.py !!!)
