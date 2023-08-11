@@ -21,6 +21,9 @@ def get_params():
                 case '-help':
                     print_help_msg()
                     quit()
+                case '-h':
+                    print_help_msg()
+                    quit()
                 case 'help':
                     print_help_msg()
                     quit()
@@ -30,4 +33,4 @@ def get_params():
     return model, save_name, pretrained, pretrained_path, early_stopping
 
 def print_help_msg():
-    print(f'Usage:\n-m: to specify the model\n-n: to specify the save name of the trained model\n-p: to use a pretrained model\n-nes: to not use early stopping')
+    print(f'Usage:\n-m: to specify the model\n-n: to specify the save name of the trained model (ResNet18 will be pretrained by default)\n-p: to use a pretrained model\n-nes: to not use early stopping')
