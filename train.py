@@ -81,9 +81,11 @@ def main():
         case 'Dense':
             thenet = architecture.DenseModel()
         case 'ResNet':
-            thenet = architecture.ResNet()
+            # thenet = architecture.ResNet()
+            thenet = ResNet18(img_channels=3, num_layers=10, block=BasicBlock, num_classes=1)
         case 'resnet':
-            thenet = architecture.ResNet()
+            # thenet = architecture.ResNet()
+            thenet = ResNet18(img_channels=3, num_layers=10, block=BasicBlock, num_classes=1)
         case 'ResNet18':
             model = torch.hub.load('pytorch/vision:v0.10.0', 'resnet18', pretrained=True)
             thenet = ResNet18(img_channels=3, num_layers=18, block=BasicBlock, num_classes=1)
